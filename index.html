@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🪨 Geochem Expedition Tracker</title>
+    <title>⛏️ Yulu's Sandbox</title>
     <style>
         :root {
             --bg-main: #f4f2eb;
@@ -188,7 +188,7 @@
 </head>
 <body>
     <header>
-        <h1>🪨 Geochem Expedition Tracker</h1>
+        <h1>⛏️ Yulu's Sandbox</h1>
         <div class="header-actions">
             <button class="btn-primary" onclick="openFormModal()">➕ New Experiment</button>
             <button class="btn-secondary" onclick="exportData()">📤 Export Data</button>
@@ -269,15 +269,15 @@
                 <div class="form-group">
                     <label>Current Stage</label>
                     <select id="expStatus">
-                        <option value="1">🔍 Insight (Idea / Reading)</option>
-                        <option value="2">💬 Discuss (Mentor Meeting)</option>
+                        <option value="1">💡 Insight (Idea / Reading)</option>
+                        <option value="2">🗣️ Discuss (Mentor Meeting)</option>
                         <option value="3">🔬 Scout Lab (Feasibility)</option>
-                        <option value="4">⏱️ Reserved (Booked)</option>
+                        <option value="4">🗓️ Reserved (Booked)</option>
                         <option value="5">⚙️ Furnace (Running)</option>
                         <option value="6">📥 Harvest (Data Collected)</option>
                         <option value="7">💻 Decipher (Reduction/Modeling)</option>
-                        <option value="8">✨ Eureka (Processed)</option>
-                        <option value="9">📊 Figures (Visualization)</option>
+                        <option value="8">✅ Eureka (Processed)</option>
+                        <option value="9">📉 Figures (Visualization)</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -348,11 +348,11 @@
         const db = getDatabase(app);
 
         const stages = [
-            { id: 1, name: "Insight", icon: "🔍" }, { id: 2, name: "Discuss", icon: "💬" },
-            { id: 3, name: "Scout Lab", icon: "🔬" }, { id: 4, name: "Reserved", icon: "⏱️" },
+            { id: 1, name: "Insight", icon: "💡" }, { id: 2, name: "Discuss", icon: "🗣️" },
+            { id: 3, name: "Scout Lab", icon: "🔬" }, { id: 4, name: "Reserved", icon: "🗓️" },
             { id: 5, name: "Furnace", icon: "⚙️" }, { id: 6, name: "Harvest", icon: "📥" },
-            { id: 7, name: "Decipher", icon: "💻" }, { id: 8, name: "Eureka", icon: "✨" },
-            { id: 9, name: "Figures", icon: "📊" }
+            { id: 7, name: "Decipher", icon: "💻" }, { id: 8, name: "Eureka", icon: "✅" },
+            { id: 9, name: "Figures", icon: "📉" }
         ];
 
         let experiments = [];
