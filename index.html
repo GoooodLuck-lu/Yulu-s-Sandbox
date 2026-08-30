@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🪨 Geochem Expedition Tracker</title>
+    <style>
+        :root {
+            --bg-main: #f4f2eb;
+            --surface: #ffffff;
+            --primary: #5c3a21;
+            --primary-light: #efebe4;
+            --accent: #c85a17;
+            --text-main: #333333;
+            --text-muted: #666666;
+            --border-color: #e0dbce;
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            margin: 0;
+            padding: 16px 24px;
+        }
+
+        header {
+            max-width: 1300px; margin: 0 auto 20px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        h1 { font-size: 1.6rem; color: var(--primary); margin: 0; display: flex; align-items: center; gap: 8px; }
+
+        .header-actions { display: flex; gap: 10px; }
+
+        button {
+            font-family: inherit; font-weight: 600; padding: 6px 12px; font-size: 0.9rem;
+            border-radius: 6px; border: 1px solid transparent;
+            cursor: pointer; transition: all 0.2s ease;
+            display: inline-flex; align-items: center; gap: 4px;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: #4a2f1b; }
+        .btn-secondary { background: #e3dec9; color: var(--text-main); }
+        .btn-secondary:hover { background: #d3cdb5; }
+        .btn-danger { background: #e53935; color: white; }
+
+        .container { max-width: 1300px; margin: 0 auto; }
+
+        .controls-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 16px; border-bottom: 2px solid var(--border-color); padding-bottom: 8px;
+        }
+        .tab-nav { display: flex; gap: 8px; }
+        .tab-btn {
+            background: transparent; border: none; font-size: 0.95rem;
+            color: var(--text-muted); padding: 6px 12px; border-radius: 6px;
+            cursor: pointer; font-weight: 500;
+        }
+        .tab-btn.active { background: var(--primary-light); color: var(--primary); font-weight: 700; }
+        
+        .search-box {
+            padding: 6px 12px; border: 1px solid var(--border-color);
+            border-radius: 20px; font-size: 0.9rem; width: 250px;
+            background: var(--surface); outline: none; transition: border 0.3s;
+        }
+        .search-box:focus { border-color: var(--accent); }
+
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px; min-height: 100px;
+        }
+        @media (max-width: 900px) { .card-grid { grid-template-columns: 1fr; } }
+        
+        .exp-card {
+            background: var(--surface); border: 1px solid var(--border-color);
+            border-radius: 8px; padding: 14px 16px; box-shadow: var(--shadow);
+            cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+        .exp-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .exp-card.urgent { border-left: 4px solid #fbc02d; }
+
+        .exp-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 10px; }
+        .exp-title { font-size: 1.05rem; font-weight: 700; color: var(--primary); line-height: 1.3; margin: 0; }
+        .exp-dates { font-size: 0.75rem; color: var(--text-muted); background: var(--primary-light); padding: 3px 6px; border-radius: 4px; white-space: nowrap; }
+
+        .stepper { display: flex; justify-content: space-between; position: relative; margin: 12px 0 4px; }
+        .stepper::before {
+            content: ''; position: absolute; top: 12px; left: 8px; right: 8px;
+            height: 2px; background: var(--border-color); z-index: 1;
+        }
+        .step-node { position: relative; z-index: 2; text-align: center; flex: 1; min-width: 0; }
+        .step-icon {
+            width: 24px; height: 24px; border-radius: 50%; background: #f0ede6;
+            border: 2px solid #ccc; display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 4px; font-size: 11px; transition: all 0.3s;
+        }
+        .step-label { font-size: 0.65rem; color: var(--text-muted); font-weight: 500; line-height: 1; overflow: hidden; text-overflow: ellipsis; }
+        .step-node.completed .step-icon { background: #e2ecc8; border-color: #8fa356; }
+        .step-node.active .step-icon {
+            background: var(--accent); border-color: var(--accent); color: white;
+            transform: scale(1.2); box-shadow: 0 0 0 3px rgba(200, 90, 23, 0.15);
+        }
+        .step-node.active .step-label { color: var(--accent); font-weight: 700; }
+        .step-node.inactive { opacity: 0.4; }
+
+        .calendar-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
+            background: var(--surface); padding: 10px 16px; border-radius: 8px; border: 1px solid var(--border-color);
+        }
+        .calendar-table {
+            background: var(--surface); border-radius: 8px; border: 1px solid var(--border-color); overflow: hidden;
+        }
+        .weekday-header-row {
+            display: grid; grid-template-columns: repeat(7, 1fr);
+            background: var(--primary-light); border-bottom: 1px solid var(--border-color);
+        }
+        .weekday-header { padding: 8px; text-align: center; font-weight: 700; font-size: 0.8rem; color: var(--primary); }
+        
+        .calendar-week-row {
+            display: grid; grid-template-columns: repeat(7, 1fr);
+            grid-auto-rows: minmax(32px, auto); gap: 2px; padding: 4px;
+            border-bottom: 1px solid var(--border-color); background: var(--surface); position: relative;
+        }
+        .calendar-week-row:last-child { border-bottom: none; }
+
+        .day-cell-header {
+            min-height: 70px; padding: 4px; display: flex; flex-direction: column; border-right: 1px solid #f0ede6;
+        }
+        .day-cell-header:last-child { border-right: none; }
+        .day-cell-header.other-month { opacity: 0.4; background: #faf9f6; }
+        
+        .day-number { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 2px; }
+        .day-cell-header.today .day-number {
+            background: var(--accent); color: white; width: 18px; height: 18px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        }
+
+        .cal-event-chip {
+            background: var(--primary-light); border-left: 3px solid var(--accent); 
+            padding: 3px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; 
+            color: var(--primary); cursor: pointer; white-space: nowrap; 
+            overflow: hidden; text-overflow: ellipsis; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            transition: background 0.2s, transform 0.1s; margin-top: 2px; z-index: 5;
+        }
+        .cal-event-chip:hover { background: #ebdccb; transform: translateY(-1px); }
+        .cal-event-chip.urgent { border-left-color: #fbc02d; background: #fffde7; }
+        
+        .unscheduled-section { margin-top: 16px; background: var(--surface); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-color); }
+        .unscheduled-section h3 { margin: 0 0 10px 0; font-size: 0.9rem; color: var(--text-muted); }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.5); display: none; align-items: center; justify-content: center;
+            z-index: 1000; backdrop-filter: blur(2px);
+        }
+        .modal-overlay.active { display: flex; }
+        .modal { background: var(--surface); width: 100%; max-width: 550px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); padding: 20px; max-height: 90vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .modal-header h2 { margin: 0; font-size: 1.2rem; color: var(--primary); }
+        .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); padding: 0;}
+
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: var(--text-main); }
+        .form-group input[type="text"], .form-group input[type="date"], .form-group select, .form-group textarea {
+            width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit; font-size: 0.9rem;
+        }
+        .checkbox-group { display: flex; align-items: center; gap: 8px; margin-top: -5px; padding: 8px; background: #fffde7; border-radius: 6px; border: 1px dashed #fbc02d;}
+        .checkbox-group label { margin: 0; font-size: 0.85rem; color: #f57f17; cursor: pointer;}
+        .checkbox-group input { cursor: pointer; }
+        .form-row { display: flex; gap: 10px; }
+        .form-row .form-group { flex: 1; }
+
+        .detail-meta { margin-bottom: 12px; font-size: 0.85rem; color: var(--text-muted); display: flex; gap: 12px; align-items: center;}
+        .detail-urgent-badge { background: #fbc02d; color: #fff; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 0.75rem; display: none;}
+        .detail-section { margin-bottom: 16px; }
+        .detail-section h4 { margin: 0 0 6px 0; font-size: 0.85rem; color: var(--primary); text-transform: uppercase; }
+        .notes-box { background: var(--bg-main); padding: 10px; border-radius: 6px; font-size: 0.9rem; white-space: pre-wrap; border: 1px solid var(--border-color); }
+        .link-box a { color: #0056b3; word-break: break-all; text-decoration: none; font-weight: 500; font-size: 0.9rem;}
+        .link-box a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🪨 Geochem Expedition Tracker</h1>
+        <div class="header-actions">
+            <button class="btn-primary" onclick="openFormModal()">➕ New Experiment</button>
+            <button class="btn-secondary" onclick="exportData()">📤 Export Data</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="controls-bar">
+            <div class="tab-nav">
+                <button class="tab-btn active" onclick="switchView('process')">🪨 Process View</button>
+                <button class="tab-btn" onclick="switchView('calendar')">📅 Calendar View</button>
+            </div>
+            <input type="text" id="searchInput" class="search-box" placeholder="🔍 Search experiments..." onkeyup="renderProcessView()">
+        </div>
+
+        <div id="view-process" class="view-section active">
+            <div id="cardGrid" class="card-grid"></div>
+        </div>
+
+        <div id="view-calendar" class="view-section">
+            <div class="calendar-header">
+                <button class="btn-secondary" onclick="changeMonth(-1)">◀ Prev</button>
+                <h2 id="calendarMonthTitle" style="margin: 0; font-size: 1.1rem; color: var(--primary);"></h2>
+                <div>
+                    <button class="btn-secondary" onclick="goToday()">Today</button>
+                    <button class="btn-secondary" onclick="changeMonth(1)">Next ▶</button>
+                </div>
+            </div>
+            
+            <div class="calendar-table">
+                <div class="weekday-header-row">
+                    <div class="weekday-header">Mon</div>
+                    <div class="weekday-header">Tue</div>
+                    <div class="weekday-header">Wed</div>
+                    <div class="weekday-header">Thu</div>
+                    <div class="weekday-header">Fri</div>
+                    <div class="weekday-header">Sat</div>
+                    <div class="weekday-header">Sun</div>
+                </div>
+                <div id="calendarWeeksContainer"></div>
+            </div>
+
+            <div class="unscheduled-section">
+                <h3>📌 Unscheduled / Backlog</h3>
+                <div id="unscheduledList" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="formModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="formTitle">New Experiment</h2>
+                <button class="close-btn" onclick="closeModal('formModal')">&times;</button>
+            </div>
+            <form id="expForm" onsubmit="saveExperiment(event)">
+                <input type="hidden" id="expId">
+                
+                <div class="form-group checkbox-group">
+                    <input type="checkbox" id="expUrgent">
+                    <label for="expUrgent">⭐ Mark as Urgent / Pinned (Show at top)</label>
+                </div>
+
+                <div class="form-group">
+                    <label>Experiment Title *</label>
+                    <input type="text" id="expName" placeholder="e.g., Lawsonite Eclogite SIMS Dating" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Start Date</label>
+                        <input type="date" id="expStartDate">
+                    </div>
+                    <div class="form-group">
+                        <label>End Date</label>
+                        <input type="date" id="expEndDate">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Current Stage</label>
+                    <select id="expStatus">
+                        <option value="1">🔍 Insight (Idea / Reading)</option>
+                        <option value="2">💬 Discuss (Mentor Meeting)</option>
+                        <option value="3">🔬 Scout Lab (Feasibility)</option>
+                        <option value="4">⏱️ Reserved (Booked)</option>
+                        <option value="5">⚙️ Furnace (Running)</option>
+                        <option value="6">📥 Harvest (Data Collected)</option>
+                        <option value="7">💻 Decipher (Reduction/Modeling)</option>
+                        <option value="8">✨ Eureka (Processed)</option>
+                        <option value="9">📊 Figures (Visualization)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Reference Link / File</label>
+                    <input type="text" id="expLink" placeholder="zotero://... or https://...">
+                </div>
+                <div class="form-group">
+                    <label>Notes & Parameters</label>
+                    <textarea id="expNotes" rows="3" placeholder="P-T conditions, etc."></textarea>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
+                    <button type="button" class="btn-secondary" onclick="closeModal('formModal')">Cancel</button>
+                    <button type="submit" class="btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="detailModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="detailTitle" style="word-break: break-word; font-size: 1.15rem;"></h2>
+                <button class="close-btn" onclick="closeModal('detailModal')">&times;</button>
+            </div>
+            <div class="detail-meta">
+                <div id="detailUrgentBadge" class="detail-urgent-badge">⭐ PINNED</div>
+                <span id="detailDates">📅 Dates: Unscheduled</span>
+            </div>
+            <div class="detail-section">
+                <h4>Progress</h4>
+                <div id="detailStepper" class="stepper" style="margin: 10px 0;"></div>
+            </div>
+            <div class="detail-section">
+                <h4>Notes</h4>
+                <div id="detailNotes" class="notes-box"></div>
+            </div>
+            <div class="detail-section" id="detailLinkContainer">
+                <h4>Link / File</h4>
+                <div id="detailLink" class="link-box"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+                <button class="btn-danger" onclick="deleteCurrentExperiment()">🗑️ Delete</button>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn-secondary" onclick="closeModal('detailModal')">Close</button>
+                    <button class="btn-primary" onclick="editFromDetail()">✏️ Edit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase 线上数据库与核心逻辑脚本 -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+        import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDSgjE9wZHB4DJ53yDxhIqKmDT29qnPKis",
+            authDomain: "sandbox-lu7.firebaseapp.com",
+            databaseURL: "https://sandbox-lu7-default-rtdb.firebaseio.com",
+            projectId: "sandbox-lu7",
+            storageBucket: "sandbox-lu7.firebasestorage.app",
+            messagingSenderId: "660038914655",
+            appId: "1:660038914655:web:d494f09a3759c544a8c1ea"
+        };
+
+        // 初始化 Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        const stages = [
+            { id: 1, name: "Insight", icon: "🔍" }, { id: 2, name: "Discuss", icon: "💬" },
+            { id: 3, name: "Scout Lab", icon: "🔬" }, { id: 4, name: "Reserved", icon: "⏱️" },
+            { id: 5, name: "Furnace", icon: "⚙️" }, { id: 6, name: "Harvest", icon: "📥" },
+            { id: 7, name: "Decipher", icon: "💻" }, { id: 8, name: "Eureka", icon: "✨" },
+            { id: 9, name: "Figures", icon: "📊" }
+        ];
+
+        let experiments = [];
+        let currentCalendarDate = new Date();
+        let selectedExpId = null;
+
+        // 从 Firebase 加载数据
+        async function safeLoadData() {
+            try {
+                const dbRef = ref(db, 'experiments');
+                const snapshot = await get(dbRef);
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    if (Array.isArray(data)) {
+                        experiments = data;
+                    } else if (typeof data === 'object') {
+                        // 如果存成对象形式，转为数组
+                        experiments = Object.values(data);
+                    }
+                } else {
+                    // 默认初始数据
+                    experiments = [{
+                        id: 1700000000000, name: "Lawsonite Eclogite SIMS Rutile U-Pb Geochronology",
+                        startDate: "2026-09-01", endDate: "2026-09-05", status: 5,
+                        link: "zotero://select/items/1_EXAMPLE", notes: "Awaiting SIMS mount assembly.",
+                        isUrgent: true
+                    }];
+                    await safeSaveData();
+                }
+            } catch (e) {
+                console.warn("从云端加载失败，使用默认数据:", e);
+                experiments = [];
+            }
+            renderProcessView();
+            renderCalendarView();
+        }
+
+        // 保存数据到 Firebase
+        async function safeSaveData() {
+            try {
+                await set(ref(db, 'experiments'), experiments);
+                console.log("Successfully synced to Firebase!");
+            } catch (e) {
+                console.warn("保存到云端失败:", e);
+                alert("⚠️ 云端同步失败，请检查网络连接！");
+            }
+        }
+
+        // 将需要的函数暴露给全局 HTML 事件 (onclick 等)
+        window.switchView = function(viewName) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+            
+            if(viewName === 'process') {
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+                document.getElementById('view-process').classList.add('active');
+                document.getElementById('searchInput').style.display = 'block';
+                renderProcessView();
+            } else {
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                document.getElementById('view-calendar').classList.add('active');
+                document.getElementById('searchInput').style.display = 'none';
+                renderCalendarView();
+            }
+        };
+
+        window.openFormModal = function(exp = null) {
+            if(exp) {
+                document.getElementById('formTitle').innerText = "Edit Experiment";
+                document.getElementById('expId').value = exp.id;
+                document.getElementById('expUrgent').checked = !!exp.isUrgent;
+                document.getElementById('expName').value = exp.name || '';
+                document.getElementById('expStartDate').value = exp.startDate || '';
+                document.getElementById('expEndDate').value = exp.endDate || '';
+                document.getElementById('expStatus').value = exp.status || 1;
+                document.getElementById('expLink').value = exp.link || '';
+                document.getElementById('expNotes').value = exp.notes || '';
+            } else {
+                document.getElementById('formTitle').innerText = "New Experiment";
+                document.getElementById('expForm').reset();
+                document.getElementById('expId').value = '';
+                document.getElementById('expUrgent').checked = false;
+            }
+            document.getElementById('formModal').classList.add('active');
+        };
+
+        window.closeModal = function(modalId) { 
+            document.getElementById(modalId).classList.remove('active'); 
+        };
+
+        window.saveExperiment = async function(e) {
+            e.preventDefault();
+            const id = document.getElementById('expId').value;
+            const newExp = {
+                id: id ? Number(id) : Date.now(),
+                isUrgent: document.getElementById('expUrgent').checked,
+                name: document.getElementById('expName').value,
+                startDate: document.getElementById('expStartDate').value,
+                endDate: document.getElementById('expEndDate').value,
+                status: parseInt(document.getElementById('expStatus').value) || 1,
+                link: document.getElementById('expLink').value,
+                notes: document.getElementById('expNotes').value
+            };
+
+            if (id) {
+                const index = experiments.findIndex(item => item.id == id);
+                if (index > -1) experiments[index] = newExp;
+            } else {
+                experiments.push(newExp);
+            }
+
+            await safeSaveData();
+            closeModal('formModal');
+            renderProcessView();
+            renderCalendarView();
+        };
+
+        window.openDetailModal = function(id) {
+            selectedExpId = id;
+            const exp = experiments.find(e => e.id == id);
+            if (!exp) return;
+
+            document.getElementById('detailTitle').innerText = exp.name;
+            document.getElementById('detailUrgentBadge').style.display = exp.isUrgent ? 'block' : 'none';
+            
+            if (exp.startDate && exp.endDate) document.getElementById('detailDates').innerText = `📅 Duration: ${exp.startDate} ~ ${exp.endDate}`;
+            else if (exp.startDate) document.getElementById('detailDates').innerText = `📅 Date: ${exp.startDate}`;
+            else document.getElementById('detailDates').innerText = `📅 Dates: Unscheduled`;
+
+            document.getElementById('detailStepper').innerHTML = stages.map(stage => {
+                let stateClass = stage.id < exp.status ? 'completed' : (stage.id == exp.status ? 'active' : 'inactive');
+                return `<div class="step-node ${stateClass}"><div class="step-icon">${stage.icon}</div><div class="step-label">${stage.name}</div></div>`;
+            }).join('');
+
+            document.getElementById('detailNotes').innerText = exp.notes || "No notes added yet.";
+            
+            const linkBox = document.getElementById('detailLink');
+            if (exp.link) {
+                document.getElementById('detailLinkContainer').style.display = 'block';
+                linkBox.innerHTML = `<a href="${exp.link}" target="_blank">🔗 Click to open attached link</a>`;
+            } else {
+                document.getElementById('detailLinkContainer').style.display = 'none';
+            }
+            document.getElementById('detailModal').classList.add('active');
+        };
+
+        window.editFromDetail = function() {
+            closeModal('detailModal');
+            const exp = experiments.find(e => e.id == selectedExpId);
+            if (exp) window.openFormModal(exp);
+        };
+
+        window.deleteCurrentExperiment = async function() {
+            if (confirm("Are you sure you want to delete this experiment record?")) {
+                experiments = experiments.filter(e => e.id != selectedExpId);
+                await safeSaveData();
+                closeModal('detailModal');
+                renderProcessView();
+                renderCalendarView();
+            }
+        };
+
+        window.exportData = function() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(experiments, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `geochem_exp_backup_${formatDateStr(new Date())}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        };
+
+        window.changeMonth = function(delta) {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + delta);
+            renderCalendarView();
+        };
+
+        window.goToday = function() {
+            currentCalendarDate = new Date();
+            renderCalendarView();
+        };
+
+        function getSortedExperiments(list) {
+            return list.slice().sort((a, b) => {
+                if (a.isUrgent !== b.isUrgent) return a.isUrgent ? -1 : 1;
+                const aCompleted = a.status >= 8;
+                const bCompleted = b.status >= 8;
+                if (aCompleted !== bCompleted) return aCompleted ? 1 : -1;
+                if (!aCompleted) {
+                    if (a.startDate && b.startDate) return new Date(a.startDate) - new Date(b.startDate);
+                    if (a.startDate) return -1;
+                    if (b.startDate) return 1;
+                } else {
+                    if (a.startDate && b.startDate) return new Date(b.startDate) - new Date(a.startDate);
+                }
+                return b.id - a.id;
+            });
+        }
+
+        function renderProcessView() {
+            const grid = document.getElementById('cardGrid');
+            const searchText = document.getElementById('searchInput').value.toLowerCase();
+            if (!grid) return;
+            grid.innerHTML = '';
+            
+            const filteredExps = experiments.filter(exp => 
+                exp.name.toLowerCase().includes(searchText) || 
+                (exp.notes && exp.notes.toLowerCase().includes(searchText))
+            );
+
+            if (filteredExps.length === 0) {
+                grid.innerHTML = `<p style="text-align:center; grid-column: 1/-1; color: var(--text-muted); padding: 40px;">No matching experiments found.</p>`;
+                return;
+            }
+
+            const sortedExps = getSortedExperiments(filteredExps);
+
+            sortedExps.forEach(exp => {
+                const card = document.createElement('div');
+                card.className = `exp-card ${exp.isUrgent ? 'urgent' : ''}`;
+                card.onclick = () => window.openDetailModal(exp.id);
+
+                let dateText = exp.startDate ? (exp.endDate ? `${exp.startDate} to ${exp.endDate}` : exp.startDate) : 'Flexible Time';
+                let urgentIcon = exp.isUrgent ? '⭐ ' : '';
+                
+                let stepperHTML = stages.map(stage => {
+                    let stateClass = stage.id < exp.status ? 'completed' : (stage.id == exp.status ? 'active' : 'inactive');
+                    return `<div class="step-node ${stateClass}"><div class="step-icon">${stage.icon}</div><div class="step-label">${stage.name}</div></div>`;
+                }).join('');
+
+                card.innerHTML = `
+                    <div class="exp-card-header">
+                        <h3 class="exp-title">${urgentIcon}${exp.name}</h3>
+                        <div class="exp-dates">${dateText}</div>
+                    </div>
+                    <div class="stepper">${stepperHTML}</div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function formatDateStr(d) {
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        function renderCalendarView() {
+            const monthTitle = document.getElementById('calendarMonthTitle');
+            const container = document.getElementById('calendarWeeksContainer');
+            const unscheduledList = document.getElementById('unscheduledList');
+            
+            if (!container || !unscheduledList) return;
+            container.innerHTML = ''; unscheduledList.innerHTML = '';
+
+            const year = currentCalendarDate.getFullYear();
+            const month = currentCalendarDate.getMonth();
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            monthTitle.innerText = `${monthNames[month]} ${year}`;
+
+            let days = [];
+            const firstDayIndex = (new Date(year, month, 1).getDay() + 6) % 7; 
+            const totalDays = new Date(year, month + 1, 0).getDate();
+            const prevMonthDays = new Date(year, month, 0).getDate();
+
+            for (let i = firstDayIndex; i > 0; i--) {
+                const d = new Date(year, month - 1, prevMonthDays - i + 1);
+                days.push({ dateStr: formatDateStr(d), dayNum: prevMonthDays - i + 1, isCurrentMonth: false });
+            }
+            for (let day = 1; day <= totalDays; day++) {
+                const d = new Date(year, month, day);
+                days.push({ dateStr: formatDateStr(d), dayNum: day, isCurrentMonth: true });
+            }
+            let totalCells = Math.ceil(days.length / 7) * 7;
+            let nextDayNum = 1;
+            while (days.length < totalCells) {
+                const d = new Date(year, month + 1, nextDayNum);
+                days.push({ dateStr: formatDateStr(d), dayNum: nextDayNum, isCurrentMonth: false });
+                nextDayNum++;
+            }
+
+            let weeks = [];
+            for (let i = 0; i < days.length; i += 7) {
+                weeks.push(days.slice(i, i + 7));
+            }
+
+            const todayStr = formatDateStr(new Date());
+
+            weeks.forEach(week => {
+                const weekRow = document.createElement('div');
+                weekRow.className = 'calendar-week-row';
+
+                week.forEach(dayObj => {
+                    const cell = document.createElement('div');
+                    cell.className = `day-cell-header ${dayObj.isCurrentMonth ? '' : 'other-month'} ${dayObj.dateStr === todayStr ? 'today' : ''}`;
+                    cell.innerHTML = `<div class="day-number">${dayObj.dayNum}</div>`;
+                    weekRow.appendChild(cell);
+                });
+
+                let weekEvents = [];
+                experiments.forEach(exp => {
+                    if (!exp.startDate) return;
+                    const expStart = exp.startDate;
+                    const expEnd = exp.endDate || exp.startDate;
+                    const weekStart = week[0].dateStr;
+                    const weekEnd = week[6].dateStr;
+
+                    if (expEnd >= weekStart && expStart <= weekEnd) {
+                        const overlapStart = expStart < weekStart ? weekStart : expStart;
+                        const overlapEnd = expEnd > weekEnd ? weekEnd : expEnd;
+                        const startIndex = week.findIndex(d => d.dateStr === overlapStart);
+                        const endIndex = week.findIndex(d => d.dateStr === overlapEnd);
+
+                        if (startIndex !== -1 && endIndex !== -1) {
+                            weekEvents.push({
+                                exp: exp,
+                                colStart: startIndex + 1,
+                                colEnd: endIndex + 2 
+                            });
+                        }
+                    }
+                });
+
+                let lanes = [];
+                weekEvents.forEach(item => {
+                    let lane = 0;
+                    while (true) {
+                        if (!lanes[lane]) lanes[lane] = [];
+                        let collision = false;
+                        for (let c = item.colStart; c < item.colEnd; c++) {
+                            if (lanes[lane][c]) { collision = true; break; }
+                        }
+                        if (!collision) {
+                            for (let c = item.colStart; c < item.colEnd; c++) {
+                                lanes[lane][c] = true;
+                            }
+                            item.row = lane + 1;
+                            break;
+                        }
+                        lane++;
+                    }
+
+                    const chip = document.createElement('div');
+                    chip.className = `cal-event-chip ${item.exp.isUrgent ? 'urgent' : ''}`;
+                    chip.style.gridColumn = `${item.colStart} / ${item.colEnd}`;
+                    chip.style.gridRow = `${item.row + 1}`;
+                    chip.innerHTML = `${item.exp.isUrgent ? '⭐ ' : ''}${item.exp.name}`;
+                    chip.onclick = (e) => {
+                        e.stopPropagation();
+                        window.openDetailModal(item.exp.id);
+                    };
+                    weekRow.appendChild(chip);
+                });
+
+                container.appendChild(weekRow);
+            });
+
+            const unscheduled = experiments.filter(e => !e.startDate);
+            if (unscheduled.length ===.0 || unscheduled.length === 0) {
+                unscheduledList.innerHTML = `<span style="font-size: 0.85rem; color: var(--text-muted);">No unscheduled experiments.</span>`;
+            } else {
+                unscheduled.forEach(exp => {
+                    const badge = document.createElement('div');
+                    badge.className = `cal-event-chip ${exp.isUrgent ? 'urgent' : ''}`;
+                    badge.style.margin = '0';
+                    badge.innerHTML = `${exp.isUrgent ? '⭐ ' : ''}${exp.name}`;
+                    badge.onclick = () => window.openDetailModal(exp.id);
+                    unscheduledList.appendChild(badge);
+                });
+            }
+        }
+
+        // 启动加载云端数据
+        safeLoadData();
+    </script>
+</body>
+</html>
